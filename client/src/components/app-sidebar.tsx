@@ -1,4 +1,4 @@
-import { Home, Database, Users, Trophy, Calendar, Sword, BarChart3, FileText } from "lucide-react";
+import { Home, Database, Users, Trophy, Calendar, Sword, BarChart3, FileText, Network, GitBranch } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +28,16 @@ const menuItems = [
     title: "Synergies",
     url: "/synergies",
     icon: Users,
+  },
+  {
+    title: "Carte des Synergies",
+    url: "/synergy-map",
+    icon: Network,
+  },
+  {
+    title: "Réseau de Synergies",
+    url: "/synergy-network",
+    icon: GitBranch,
   },
   {
     title: "Drafting",

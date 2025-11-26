@@ -35,7 +35,7 @@ import { eq, and, or, desc } from "drizzle-orm";
 export interface IStorage {
   getChampions(): Promise<ChampionWithEvaluation[]>;
   createChampion(champion: InsertChampion): Promise<Champion>;
-  updateChampionRole(championId: string, role: string): Promise<Champion>;
+  updateChampionRoles(championId: string, roles: string[]): Promise<Champion>;
   getChampionEvaluation(championId: string): Promise<ChampionEvaluation | undefined>;
   upsertChampionEvaluation(evaluation: InsertChampionEvaluation): Promise<ChampionEvaluation>;
   
@@ -84,10 +84,10 @@ export class DatabaseStorage implements IStorage {
     return newChampion;
   }
 
-  async updateChampionRole(championId: string, role: string): Promise<Champion> {
+  async updateChampionRoles(championId: string, roles: string[]): Promise<Champion> {
     const [updatedChampion] = await db
       .update(champions)
-      .set({ role })
+      .set({ roles })
       .where(eq(champions.id, championId))
       .returning();
     return updatedChampion;

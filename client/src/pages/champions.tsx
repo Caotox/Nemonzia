@@ -8,13 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Star } from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Star, Plus, X } from "lucide-react";
 import type { ChampionWithEvaluation } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -85,23 +84,23 @@ export default function Champions() {
     queryKey: ["/api/champions"],
   });
 
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ championId, role }: { championId: string; role: string }) => {
-      return await apiRequest("PUT", `/api/champions/${championId}/role`, { role });
+  const updateRolesMutation = useMutation({
+    mutationFn: async ({ championId, roles }: { championId: string; roles: string[] }) => {
+      return await apiRequest("PUT", `/api/champions/${championId}/roles`, { roles });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/champions"] });
       toast({
-        title: "Rôle mis à jour",
-        description: "Le rôle du champion a été enregistré.",
+        title: "Rôles mis à jour",
+        description: "Les rôles du champion ont été enregistrés.",
       });
     },
     onError: (error) => {
-      console.error("Error updating role:", error);
+      console.error("Error updating roles:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de mettre à jour le rôle.",
+        description: "Impossible de mettre à jour les rôles.",
       });
     },
   });
@@ -142,7 +141,7 @@ export default function Champions() {
     const matchesSearch = champion.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole =
       selectedRole === "Tous" ||
-      (selectedRole && champion.role === selectedRole);
+      (selectedRole && champion.roles?.includes(selectedRole));
     return matchesSearch && matchesRole;
   });
 
@@ -245,29 +244,55 @@ export default function Champions() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center">
-                        <Select
-                          value={champion.role || "none"}
-                          onValueChange={(value) => {
-                            if (value !== "none") {
-                              updateRoleMutation.mutate({
-                                championId: champion.id,
-                                role: value,
-                              });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue placeholder="Rôle" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">-</SelectItem>
-                            <SelectItem value="TOP">TOP</SelectItem>
-                            <SelectItem value="JGL">JGL</SelectItem>
-                            <SelectItem value="MID">MID</SelectItem>
-                            <SelectItem value="ADC">ADC</SelectItem>
-                            <SelectItem value="SUP">SUP</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-8 gap-1">
+                              {champion.roles && champion.roles.length > 0 ? (
+                                <div className="flex gap-1">
+                                  {champion.roles.map((role) => (
+                                    <Badge key={role} variant="secondary" className="text-xs px-1 py-0">
+                                      {role}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <>
+                                  <Plus className="h-3 w-3" />
+                                  <span className="text-xs">Rôles</span>
+                                </>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm mb-2">Sélectionner les rôles</h4>
+                              {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => (
+                                <div key={role} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${champion.id}-${role}`}
+                                    checked={champion.roles?.includes(role) || false}
+                                    onCheckedChange={(checked) => {
+                                      const currentRoles = champion.roles || [];
+                                      const newRoles = checked
+                                        ? [...currentRoles, role]
+                                        : currentRoles.filter((r) => r !== role);
+                                      updateRolesMutation.mutate({
+                                        championId: champion.id,
+                                        roles: newRoles,
+                                      });
+                                    }}
+                                  />
+                                  <label
+                                    htmlFor={`${champion.id}-${role}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                  >
+                                    {role}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </td>
                     {CHARACTERISTICS.map((char) => {

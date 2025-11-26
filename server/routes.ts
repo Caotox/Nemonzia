@@ -65,19 +65,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/champions/:id/role", async (req, res) => {
+  app.put("/api/champions/:id/roles", async (req, res) => {
     try {
-      const { role } = req.body;
+      const { roles } = req.body;
       
-      if (!role || !["TOP", "JGL", "MID", "ADC", "SUP"].includes(role)) {
-        return res.status(400).json({ error: "Invalid role" });
+      if (!Array.isArray(roles)) {
+        return res.status(400).json({ error: "Roles must be an array" });
       }
       
-      const champion = await storage.updateChampionRole(req.params.id, role);
+      const validRoles = ["TOP", "JGL", "MID", "ADC", "SUP"];
+      const invalidRoles = roles.filter(role => !validRoles.includes(role));
+      
+      if (invalidRoles.length > 0) {
+        return res.status(400).json({ error: "Invalid roles", invalidRoles });
+      }
+      
+      const champion = await storage.updateChampionRoles(req.params.id, roles);
       res.json(champion);
     } catch (error: any) {
-      console.error("Error updating champion role:", error);
-      res.status(500).json({ error: "Failed to update champion role" });
+      console.error("Error updating champion roles:", error);
+      res.status(500).json({ error: "Failed to update champion roles" });
     }
   });
 

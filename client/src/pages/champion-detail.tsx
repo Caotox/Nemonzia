@@ -223,7 +223,7 @@ export default function ChampionDetail() {
                 </div>
                 <div className="max-h-64 overflow-y-auto rounded-md border border-border p-2">
                   {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => {
-                    const roleChampions = availableChampions?.filter((c) => c.role === role);
+                    const roleChampions = availableChampions?.filter((c) => c.roles?.includes(role));
                     if (!roleChampions || roleChampions.length === 0) return null;
                     
                     return (
@@ -253,14 +253,14 @@ export default function ChampionDetail() {
                       </div>
                     );
                   })}
-                  {availableChampions && availableChampions.filter((c) => !c.role).length > 0 && (
+                  {availableChampions && availableChampions.filter((c) => !c.roles || c.roles.length === 0).length > 0 && (
                     <div className="mb-3">
                       <div className="mb-2 flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">Sans rôle</Badge>
                         <div className="h-px flex-1 bg-border" />
                       </div>
                       <div className="space-y-1">
-                        {availableChampions?.filter((c) => !c.role).map((c) => (
+                        {availableChampions?.filter((c) => !c.roles || c.roles.length === 0).map((c) => (
                           <button
                             key={c.id}
                             onClick={() => setSelectedChampionId(c.id)}
@@ -333,7 +333,7 @@ export default function ChampionDetail() {
                 {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => {
                   const roleSynergies = positiveSynergies.filter((synergy) => {
                     const otherChamp = getOtherChampion(synergy);
-                    return otherChamp?.role === role;
+                    return otherChamp?.roles?.includes(role);
                   });
                   
                   if (roleSynergies.length === 0) return null;
@@ -387,7 +387,7 @@ export default function ChampionDetail() {
                 })}
                 {positiveSynergies.filter((synergy) => {
                   const otherChamp = getOtherChampion(synergy);
-                  return !otherChamp?.role;
+                  return !otherChamp?.roles || otherChamp.roles.length === 0;
                 }).length > 0 && (
                   <div>
                     <div className="mb-2 flex items-center gap-2">
@@ -397,7 +397,7 @@ export default function ChampionDetail() {
                     <div className="space-y-2">
                       {positiveSynergies.filter((synergy) => {
                         const otherChamp = getOtherChampion(synergy);
-                        return !otherChamp?.role;
+                        return !otherChamp?.roles || otherChamp.roles.length === 0;
                       }).map((synergy) => {
                         const otherChamp = getOtherChampion(synergy);
                         if (!otherChamp) return null;
@@ -461,7 +461,7 @@ export default function ChampionDetail() {
                 {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => {
                   const roleSynergies = negativeSynergies.filter((synergy) => {
                     const otherChamp = getOtherChampion(synergy);
-                    return otherChamp?.role === role;
+                    return otherChamp?.roles?.includes(role);
                   });
                   
                   if (roleSynergies.length === 0) return null;
@@ -515,7 +515,7 @@ export default function ChampionDetail() {
                 })}
                 {negativeSynergies.filter((synergy) => {
                   const otherChamp = getOtherChampion(synergy);
-                  return !otherChamp?.role;
+                  return !otherChamp?.roles || otherChamp.roles.length === 0;
                 }).length > 0 && (
                   <div>
                     <div className="mb-2 flex items-center gap-2">
@@ -525,7 +525,7 @@ export default function ChampionDetail() {
                     <div className="space-y-2">
                       {negativeSynergies.filter((synergy) => {
                         const otherChamp = getOtherChampion(synergy);
-                        return !otherChamp?.role;
+                        return !otherChamp?.roles || otherChamp.roles.length === 0;
                       }).map((synergy) => {
                         const otherChamp = getOtherChampion(synergy);
                         if (!otherChamp) return null;

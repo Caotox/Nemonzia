@@ -9,7 +9,7 @@ export const champions = pgTable("champions", {
   name: text("name").notNull(),
   imageUrl: text("image_url").notNull(),
   key: text("key").notNull(),
-  role: text("role"),
+  roles: text("roles").array().notNull().default(sql`ARRAY[]::text[]`),
 });
 
 export const championEvaluations = pgTable("champion_evaluations", {

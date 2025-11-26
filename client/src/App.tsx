@@ -9,6 +9,8 @@ import Home from "@/pages/home";
 import Champions from "@/pages/champions";
 import ChampionDetail from "@/pages/champion-detail";
 import Synergies from "@/pages/synergies";
+import SynergyMap from "@/pages/synergy-map";
+import SynergyNetwork from "@/pages/synergy-network";
 import Drafting from "@/pages/drafting";
 import Scrims from "@/pages/scrims";
 import Statistics from "@/pages/statistics";
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/champions/:id" component={ChampionDetail} />
       <Route path="/champions" component={Champions} />
       <Route path="/synergies" component={Synergies} />
+      <Route path="/synergy-map" component={SynergyMap} />
+      <Route path="/synergy-network" component={SynergyNetwork} />
       <Route path="/drafting" component={Drafting} />
       <Route path="/scrims" component={Scrims} />
       <Route path="/statistics" component={Statistics} />
