@@ -342,10 +342,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "dayOfWeek must be between 0 and 6" });
       }
       
-      if (!availabilityData.timeSlot || availabilityData.timeSlot.trim().length === 0) {
-        return res.status(400).json({ error: "timeSlot is required" });
-      }
-      
       const availability = await storage.upsertAvailability(availabilityData);
       res.json(availability);
     } catch (error: any) {

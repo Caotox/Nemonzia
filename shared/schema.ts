@@ -60,6 +60,8 @@ export const scrims = pgTable("scrims", {
   isWin: boolean("is_win").notNull(),
   score: text("score").notNull(),
   comments: text("comments").notNull().default(''),
+  numberOfGames: integer("number_of_games"),
+  compositions: jsonb("compositions"),
 });
 
 export const players = pgTable("players", {

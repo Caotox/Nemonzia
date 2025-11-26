@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trophy, Target, Calendar, Trash2 } from "lucide-react";
+import { Plus, Trophy, Target, Calendar, Trash2, X } from "lucide-react";
 import type { Scrim } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -24,12 +24,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
+
+interface GameComposition {
+  gameNumber: number;
+  top?: string;
+  jungle?: string;
+  mid?: string;
+  adc?: string;
+  support?: string;
+}
 
 export default function Scrims() {
   const [opponent, setOpponent] = useState("");
   const [score, setScore] = useState("");
   const [isWin, setIsWin] = useState<boolean>(true);
   const [comments, setComments] = useState("");
+  const [numberOfGames, setNumberOfGames] = useState<number>(1);
+  const [compositions, setCompositions] = useState<GameComposition[]>([]);
+  const [showCompositions, setShowCompositions] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -47,6 +65,8 @@ export default function Scrims() {
         score,
         isWin,
         comments,
+        numberOfGames: numberOfGames > 0 ? numberOfGames : undefined,
+        compositions: compositions.length > 0 ? compositions : undefined,
       });
     },
     onSuccess: () => {
@@ -55,6 +75,9 @@ export default function Scrims() {
       setScore("");
       setIsWin(true);
       setComments("");
+      setNumberOfGames(1);
+      setCompositions([]);
+      setShowCompositions(false);
       setIsDialogOpen(false);
       toast({
         title: "Scrim ajouté",
@@ -165,16 +188,125 @@ export default function Scrims() {
 
               <div>
                 <label className="mb-2 block text-sm font-medium">
+                  Nombre de games
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="99"
+                  placeholder="Ex: 3"
+                  value={numberOfGames}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setNumberOfGames(val);
+                    // Ajuster le tableau des compositions
+                    if (val > compositions.length) {
+                      const newComps = [...compositions];
+                      for (let i = compositions.length; i < val; i++) {
+                        newComps.push({ gameNumber: i + 1 });
+                      }
+                      setCompositions(newComps);
+                    } else if (val < compositions.length) {
+                      setCompositions(compositions.slice(0, val));
+                    }
+                  }}
+                  data-testid="input-number-of-games"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
                   Commentaires
                 </label>
                 <Textarea
                   placeholder="Notes sur le scrim, points à améliorer..."
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  rows={5}
+                  rows={3}
                   data-testid="textarea-comments"
                 />
               </div>
+
+              <Collapsible open={showCompositions} onOpenChange={setShowCompositions}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full" type="button">
+                    {showCompositions ? "Masquer" : "Ajouter"} les compositions (facultatif)
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4 space-y-4">
+                  {Array.from({ length: numberOfGames }, (_, i) => i + 1).map((gameNum) => {
+                    const compIndex = compositions.findIndex(c => c.gameNumber === gameNum);
+                    const comp = compIndex >= 0 ? compositions[compIndex] : { gameNumber: gameNum };
+                    
+                    const updateComposition = (field: keyof GameComposition, value: string) => {
+                      const newComps = [...compositions];
+                      if (compIndex >= 0) {
+                        newComps[compIndex] = { ...newComps[compIndex], [field]: value };
+                      } else {
+                        newComps.push({ ...comp, [field]: value });
+                      }
+                      setCompositions(newComps);
+                    };
+
+                    return (
+                      <Card key={gameNum} className="p-4">
+                        <h4 className="mb-3 font-medium">Game {gameNum}</h4>
+                        <div className="grid gap-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Top</Label>
+                              <Input
+                                placeholder="Champion"
+                                value={comp.top || ""}
+                                onChange={(e) => updateComposition("top", e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Jungle</Label>
+                              <Input
+                                placeholder="Champion"
+                                value={comp.jungle || ""}
+                                onChange={(e) => updateComposition("jungle", e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs">Mid</Label>
+                              <Input
+                                placeholder="Champion"
+                                value={comp.mid || ""}
+                                onChange={(e) => updateComposition("mid", e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">ADC</Label>
+                              <Input
+                                placeholder="Champion"
+                                value={comp.adc || ""}
+                                onChange={(e) => updateComposition("adc", e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Support</Label>
+                              <Input
+                                placeholder="Champion"
+                                value={comp.support || ""}
+                                onChange={(e) => updateComposition("support", e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
 
               <Button
                 onClick={() => addScrimMutation.mutate()}
@@ -262,8 +394,29 @@ export default function Scrims() {
                       minute: "2-digit",
                     })}
                   </p>
+                  {scrim.numberOfGames && (
+                    <p className="text-xs text-muted-foreground">
+                      {scrim.numberOfGames} game{scrim.numberOfGames > 1 ? "s" : ""}
+                    </p>
+                  )}
                   {scrim.comments && (
                     <p className="text-sm text-foreground">{scrim.comments}</p>
+                  )}
+                  {scrim.compositions && Array.isArray(scrim.compositions) && scrim.compositions.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {scrim.compositions.map((comp: GameComposition) => (
+                        <div key={comp.gameNumber} className="rounded border border-border/50 bg-muted/30 p-2">
+                          <p className="mb-1 text-xs font-medium">Game {comp.gameNumber}</p>
+                          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                            {comp.top && <span>Top: {comp.top}</span>}
+                            {comp.jungle && <span>JGL: {comp.jungle}</span>}
+                            {comp.mid && <span>Mid: {comp.mid}</span>}
+                            {comp.adc && <span>ADC: {comp.adc}</span>}
+                            {comp.support && <span>Sup: {comp.support}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <Button
