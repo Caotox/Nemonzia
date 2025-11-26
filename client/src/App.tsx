@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import Home from "@/pages/home";
 import Champions from "@/pages/champions";
 import ChampionDetail from "@/pages/champion-detail";
+import Synergies from "@/pages/synergies";
 import Drafting from "@/pages/drafting";
 import Scrims from "@/pages/scrims";
 import Statistics from "@/pages/statistics";
@@ -16,15 +18,16 @@ import Availability from "@/pages/availability";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <Redirect to="/champions" />} />
+      <Route path="/" component={Home} />
       <Route path="/champions/:id" component={ChampionDetail} />
       <Route path="/champions" component={Champions} />
+      <Route path="/synergies" component={Synergies} />
       <Route path="/drafting" component={Drafting} />
       <Route path="/scrims" component={Scrims} />
       <Route path="/statistics" component={Statistics} />
       <Route path="/patchnotes" component={PatchNotes} />
       <Route path="/availability" component={Availability} />
-      <Route component={() => <Redirect to="/champions" />} />
+      <Route component={Home} />
     </Switch>
   );
 }

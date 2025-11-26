@@ -65,6 +65,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/champions/:id/role", async (req, res) => {
+    try {
+      const { role } = req.body;
+      
+      if (!role || !["TOP", "JGL", "MID", "ADC", "SUP"].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      
+      const champion = await storage.updateChampionRole(req.params.id, role);
+      res.json(champion);
+    } catch (error: any) {
+      console.error("Error updating champion role:", error);
+      res.status(500).json({ error: "Failed to update champion role" });
+    }
+  });
+
   app.post("/api/champions/evaluate", async (req, res) => {
     try {
       const validatedInput = partialChampionEvaluationSchema.parse(req.body);

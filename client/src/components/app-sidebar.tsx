@@ -1,4 +1,4 @@
-import { Database, Users, Trophy, Calendar, Sword, BarChart3, FileText } from "lucide-react";
+import { Home, Database, Users, Trophy, Calendar, Sword, BarChart3, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,9 +15,19 @@ import nmzLogo from "@assets/nmz-logo.png";
 
 const menuItems = [
   {
+    title: "Accueil",
+    url: "/",
+    icon: Home,
+  },
+  {
     title: "Champions",
     url: "/champions",
     icon: Database,
+  },
+  {
+    title: "Synergies",
+    url: "/synergies",
+    icon: Users,
   },
   {
     title: "Drafting",

@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, Star } from "lucide-react";
 import type { ChampionWithEvaluation } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -76,6 +83,27 @@ export default function Champions() {
 
   const { data: champions, isLoading } = useQuery<ChampionWithEvaluation[]>({
     queryKey: ["/api/champions"],
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ championId, role }: { championId: string; role: string }) => {
+      return await apiRequest("PUT", `/api/champions/${championId}/role`, { role });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/champions"] });
+      toast({
+        title: "Rôle mis à jour",
+        description: "Le rôle du champion a été enregistré.",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating role:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de mettre à jour le rôle.",
+      });
+    },
   });
 
   const updateEvaluationMutation = useMutation({
@@ -177,6 +205,11 @@ export default function Champions() {
                       Champion
                     </span>
                   </th>
+                  <th className="px-4 py-3 text-center">
+                    <span className="font-rajdhani text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Rôle
+                    </span>
+                  </th>
                   {CHARACTERISTICS.map((char) => (
                     <th key={char.key} className="px-4 py-3 text-center">
                       <span className="font-rajdhani text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -209,6 +242,33 @@ export default function Champions() {
                           </span>
                         </div>
                       </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-center">
+                        <Select
+                          value={champion.role || "none"}
+                          onValueChange={(value) => {
+                            if (value !== "none") {
+                              updateRoleMutation.mutate({
+                                championId: champion.id,
+                                role: value,
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue placeholder="Rôle" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">-</SelectItem>
+                            <SelectItem value="TOP">TOP</SelectItem>
+                            <SelectItem value="JGL">JGL</SelectItem>
+                            <SelectItem value="MID">MID</SelectItem>
+                            <SelectItem value="ADC">ADC</SelectItem>
+                            <SelectItem value="SUP">SUP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </td>
                     {CHARACTERISTICS.map((char) => {
                       const evalValue = champion.evaluation?.[char.key as keyof typeof champion.evaluation];
