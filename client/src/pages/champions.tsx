@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Star } from "lucide-react";
 import type { ChampionWithEvaluation } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -65,8 +67,11 @@ function StarRating({
   );
 }
 
+const ROLES = ["Tous", "TOP", "JGL", "MID", "ADC", "SUP"] as const;
+
 export default function Champions() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("Tous");
   const { toast } = useToast();
 
   const { data: champions, isLoading } = useQuery<ChampionWithEvaluation[]>({
@@ -105,9 +110,13 @@ export default function Champions() {
     },
   });
 
-  const filteredChampions = champions?.filter((champion) =>
-    champion.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChampions = champions?.filter((champion) => {
+    const matchesSearch = champion.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole =
+      selectedRole === "Tous" ||
+      (selectedRole && champion.role === selectedRole);
+    return matchesSearch && matchesRole;
+  });
 
   if (isLoading) {
     return (
@@ -131,20 +140,31 @@ export default function Champions() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher un champion..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-champion"
-              />
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un champion..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-champion"
+                />
+              </div>
+              <Badge variant="secondary" className="font-mono">
+                {filteredChampions?.length || 0} champions
+              </Badge>
             </div>
-            <Badge variant="secondary" className="font-mono">
-              {filteredChampions?.length || 0} champions
-            </Badge>
+            <Tabs value={selectedRole} onValueChange={setSelectedRole}>
+              <TabsList className="grid w-full grid-cols-6">
+                {ROLES.map((role) => (
+                  <TabsTrigger key={role} value={role}>
+                    {role}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
         </CardHeader>
         <CardContent>
@@ -174,19 +194,21 @@ export default function Champions() {
                     data-testid={`row-champion-${champion.id}`}
                   >
                     <td className="sticky left-0 z-10 bg-card px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 overflow-hidden rounded-md bg-muted">
-                          <img
-                            src={champion.imageUrl}
-                            alt={champion.name}
-                            className="h-full w-full object-cover"
-                            data-testid={`img-champion-${champion.id}`}
-                          />
+                      <Link href={`/champions/${champion.id}`}>
+                        <div className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80">
+                          <div className="h-12 w-12 overflow-hidden rounded-md bg-muted">
+                            <img
+                              src={champion.imageUrl}
+                              alt={champion.name}
+                              className="h-full w-full object-cover"
+                              data-testid={`img-champion-${champion.id}`}
+                            />
+                          </div>
+                          <span className="font-medium text-foreground">
+                            {champion.name}
+                          </span>
                         </div>
-                        <span className="font-medium text-foreground">
-                          {champion.name}
-                        </span>
-                      </div>
+                      </Link>
                     </td>
                     {CHARACTERISTICS.map((char) => {
                       const evalValue = champion.evaluation?.[char.key as keyof typeof champion.evaluation];

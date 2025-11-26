@@ -9,6 +9,7 @@ export const champions = pgTable("champions", {
   name: text("name").notNull(),
   imageUrl: text("image_url").notNull(),
   key: text("key").notNull(),
+  role: text("role"),
 });
 
 export const championEvaluations = pgTable("champion_evaluations", {

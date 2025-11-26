@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import Champions from "@/pages/champions";
+import ChampionDetail from "@/pages/champion-detail";
 import Drafting from "@/pages/drafting";
 import Scrims from "@/pages/scrims";
 import Statistics from "@/pages/statistics";
@@ -16,6 +17,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={() => <Redirect to="/champions" />} />
+      <Route path="/champions/:id" component={ChampionDetail} />
       <Route path="/champions" component={Champions} />
       <Route path="/drafting" component={Drafting} />
       <Route path="/scrims" component={Scrims} />
