@@ -221,23 +221,64 @@ export default function ChampionDetail() {
                     className="pl-9"
                   />
                 </div>
-                <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-border p-2">
-                  {availableChampions?.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedChampionId(c.id)}
-                      className={`flex w-full items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted ${
-                        selectedChampionId === c.id ? "bg-muted" : ""
-                      }`}
-                    >
-                      <img
-                        src={c.imageUrl}
-                        alt={c.name}
-                        className="h-8 w-8 rounded object-cover"
-                      />
-                      <span className="text-sm">{c.name}</span>
-                    </button>
-                  ))}
+                <div className="max-h-64 overflow-y-auto rounded-md border border-border p-2">
+                  {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => {
+                    const roleChampions = availableChampions?.filter((c) => c.role === role);
+                    if (!roleChampions || roleChampions.length === 0) return null;
+                    
+                    return (
+                      <div key={role} className="mb-3">
+                        <div className="mb-2 flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{role}</Badge>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                        <div className="space-y-1">
+                          {roleChampions.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => setSelectedChampionId(c.id)}
+                              className={`flex w-full items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted ${
+                                selectedChampionId === c.id ? "bg-muted" : ""
+                              }`}
+                            >
+                              <img
+                                src={c.imageUrl}
+                                alt={c.name}
+                                className="h-8 w-8 rounded object-cover"
+                              />
+                              <span className="text-sm">{c.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {availableChampions && availableChampions.filter((c) => !c.role).length > 0 && (
+                    <div className="mb-3">
+                      <div className="mb-2 flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">Sans rôle</Badge>
+                        <div className="h-px flex-1 bg-border" />
+                      </div>
+                      <div className="space-y-1">
+                        {availableChampions?.filter((c) => !c.role).map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => setSelectedChampionId(c.id)}
+                            className={`flex w-full items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted ${
+                              selectedChampionId === c.id ? "bg-muted" : ""
+                            }`}
+                          >
+                            <img
+                              src={c.imageUrl}
+                              alt={c.name}
+                              className="h-8 w-8 rounded object-cover"
+                            />
+                            <span className="text-sm">{c.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -288,43 +329,114 @@ export default function ChampionDetail() {
             {synergiesLoading ? (
               <Skeleton className="h-32 w-full" />
             ) : positiveSynergies && positiveSynergies.length > 0 ? (
-              <div className="space-y-3">
-                {positiveSynergies.map((synergy) => {
-                  const otherChamp = getOtherChampion(synergy);
-                  if (!otherChamp) return null;
+              <div className="space-y-4">
+                {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => {
+                  const roleSynergies = positiveSynergies.filter((synergy) => {
+                    const otherChamp = getOtherChampion(synergy);
+                    return otherChamp?.role === role;
+                  });
+                  
+                  if (roleSynergies.length === 0) return null;
+                  
                   return (
-                    <div
-                      key={synergy.id}
-                      className="flex items-start justify-between rounded-lg border border-border p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={otherChamp.imageUrl}
-                          alt={otherChamp.name}
-                          className="h-12 w-12 rounded object-cover"
-                        />
-                        <div>
-                          <h4 className="font-medium">{otherChamp.name}</h4>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">Force: {synergy.rating}/3</Badge>
-                          </div>
-                          {synergy.notes && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {synergy.notes}
-                            </p>
-                          )}
-                        </div>
+                    <div key={role}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs font-semibold">{role}</Badge>
+                        <div className="h-px flex-1 bg-border" />
                       </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => deleteSynergyMutation.mutate(synergy.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="space-y-2">
+                        {roleSynergies.map((synergy) => {
+                          const otherChamp = getOtherChampion(synergy);
+                          if (!otherChamp) return null;
+                          return (
+                            <div
+                              key={synergy.id}
+                              className="flex items-start justify-between rounded-lg border border-border p-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={otherChamp.imageUrl}
+                                  alt={otherChamp.name}
+                                  className="h-10 w-10 rounded object-cover"
+                                />
+                                <div>
+                                  <h4 className="font-medium text-sm">{otherChamp.name}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">Force: {synergy.rating}/3</Badge>
+                                  </div>
+                                  {synergy.notes && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {synergy.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => deleteSynergyMutation.mutate(synergy.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
+                {positiveSynergies.filter((synergy) => {
+                  const otherChamp = getOtherChampion(synergy);
+                  return !otherChamp?.role;
+                }).length > 0 && (
+                  <div>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs font-semibold">Sans rôle</Badge>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                    <div className="space-y-2">
+                      {positiveSynergies.filter((synergy) => {
+                        const otherChamp = getOtherChampion(synergy);
+                        return !otherChamp?.role;
+                      }).map((synergy) => {
+                        const otherChamp = getOtherChampion(synergy);
+                        if (!otherChamp) return null;
+                        return (
+                          <div
+                            key={synergy.id}
+                            className="flex items-start justify-between rounded-lg border border-border p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={otherChamp.imageUrl}
+                                alt={otherChamp.name}
+                                className="h-10 w-10 rounded object-cover"
+                              />
+                              <div>
+                                <h4 className="font-medium text-sm">{otherChamp.name}</h4>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">Force: {synergy.rating}/3</Badge>
+                                </div>
+                                {synergy.notes && (
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {synergy.notes}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteSynergyMutation.mutate(synergy.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-center text-sm text-muted-foreground">
@@ -345,43 +457,114 @@ export default function ChampionDetail() {
             {synergiesLoading ? (
               <Skeleton className="h-32 w-full" />
             ) : negativeSynergies && negativeSynergies.length > 0 ? (
-              <div className="space-y-3">
-                {negativeSynergies.map((synergy) => {
-                  const otherChamp = getOtherChampion(synergy);
-                  if (!otherChamp) return null;
+              <div className="space-y-4">
+                {["TOP", "JGL", "MID", "ADC", "SUP"].map((role) => {
+                  const roleSynergies = negativeSynergies.filter((synergy) => {
+                    const otherChamp = getOtherChampion(synergy);
+                    return otherChamp?.role === role;
+                  });
+                  
+                  if (roleSynergies.length === 0) return null;
+                  
                   return (
-                    <div
-                      key={synergy.id}
-                      className="flex items-start justify-between rounded-lg border border-border p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={otherChamp.imageUrl}
-                          alt={otherChamp.name}
-                          className="h-12 w-12 rounded object-cover"
-                        />
-                        <div>
-                          <h4 className="font-medium">{otherChamp.name}</h4>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">Force: {synergy.rating}/3</Badge>
-                          </div>
-                          {synergy.notes && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {synergy.notes}
-                            </p>
-                          )}
-                        </div>
+                    <div key={role}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs font-semibold">{role}</Badge>
+                        <div className="h-px flex-1 bg-border" />
                       </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => deleteSynergyMutation.mutate(synergy.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="space-y-2">
+                        {roleSynergies.map((synergy) => {
+                          const otherChamp = getOtherChampion(synergy);
+                          if (!otherChamp) return null;
+                          return (
+                            <div
+                              key={synergy.id}
+                              className="flex items-start justify-between rounded-lg border border-border p-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={otherChamp.imageUrl}
+                                  alt={otherChamp.name}
+                                  className="h-10 w-10 rounded object-cover"
+                                />
+                                <div>
+                                  <h4 className="font-medium text-sm">{otherChamp.name}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">Force: {synergy.rating}/3</Badge>
+                                  </div>
+                                  {synergy.notes && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {synergy.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => deleteSynergyMutation.mutate(synergy.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
+                {negativeSynergies.filter((synergy) => {
+                  const otherChamp = getOtherChampion(synergy);
+                  return !otherChamp?.role;
+                }).length > 0 && (
+                  <div>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs font-semibold">Sans rôle</Badge>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                    <div className="space-y-2">
+                      {negativeSynergies.filter((synergy) => {
+                        const otherChamp = getOtherChampion(synergy);
+                        return !otherChamp?.role;
+                      }).map((synergy) => {
+                        const otherChamp = getOtherChampion(synergy);
+                        if (!otherChamp) return null;
+                        return (
+                          <div
+                            key={synergy.id}
+                            className="flex items-start justify-between rounded-lg border border-border p-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={otherChamp.imageUrl}
+                                alt={otherChamp.name}
+                                className="h-10 w-10 rounded object-cover"
+                              />
+                              <div>
+                                <h4 className="font-medium text-sm">{otherChamp.name}</h4>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">Force: {synergy.rating}/3</Badge>
+                                </div>
+                                {synergy.notes && (
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {synergy.notes}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteSynergyMutation.mutate(synergy.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-center text-sm text-muted-foreground">
