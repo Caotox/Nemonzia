@@ -30,6 +30,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface GameComposition {
   gameNumber: number;
@@ -74,7 +75,7 @@ export default function Scrims() {
       
       if (editingScrim) {
         // Mode édition
-        await apiRequest("PUT", `/api/scrims/${editingScrim.id}`, {
+        return await apiRequest("PUT", `/api/scrims/${editingScrim.id}`, {
           opponent,
           score,
           isWin,
@@ -85,7 +86,7 @@ export default function Scrims() {
         });
       } else {
         // Mode création
-        await apiRequest("POST", "/api/scrims", {
+        return await apiRequest("POST", "/api/scrims", {
           opponent,
           score,
           isWin,
@@ -96,6 +97,32 @@ export default function Scrims() {
         });
       }
     },
+    onMutate: async () => {
+      if (!editingScrim) {
+        // Optimistic update uniquement pour la création
+        await queryClient.cancelQueries({ queryKey: ["/api/scrims"] });
+        const previousScrims = queryClient.getQueryData<Scrim[]>(["/api/scrims"]);
+        
+        const optimisticScrim: Scrim = {
+          id: `temp-${Date.now()}`,
+          opponent,
+          score,
+          isWin,
+          comments,
+          date: new Date().toISOString(),
+          numberOfGames: numberOfGames > 0 ? numberOfGames : null,
+          compositions: compositions.length > 0 ? compositions : null,
+          drafts: gameDrafts.length > 0 ? gameDrafts : null,
+        };
+        
+        queryClient.setQueryData<Scrim[]>(["/api/scrims"], (old) => 
+          old ? [optimisticScrim, ...old] : [optimisticScrim]
+        );
+        
+        return { previousScrims };
+      }
+      return {};
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/scrims"] });
       resetForm();
@@ -104,7 +131,10 @@ export default function Scrims() {
         description: editingScrim ? "Le scrim a été mis à jour." : "Le résultat du scrim a été enregistré.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context: any) => {
+      if (context?.previousScrims) {
+        queryClient.setQueryData(["/api/scrims"], context.previousScrims);
+      }
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -186,13 +216,14 @@ export default function Scrims() {
               Ajouter un Scrim
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] max-w-2xl">
             <DialogHeader>
               <DialogTitle className="font-rajdhani text-xl font-bold uppercase">
                 {editingScrim ? "Modifier le Scrim" : "Nouveau Scrim"}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+              <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium">
                   Adversaire
@@ -411,7 +442,8 @@ export default function Scrims() {
               >
                 {addScrimMutation.isPending ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
-            </div>
+              </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>
