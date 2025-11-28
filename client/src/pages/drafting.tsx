@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, Edit } from "lucide-react";
 import type { Champion, Draft, DraftWithDetails } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +84,7 @@ export default function Drafting() {
     enemyBans: [],
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingDraft, setEditingDraft] = useState<DraftWithDetails | null>(null);
   const { toast } = useToast();
 
   const { data: champions, isLoading: championsLoading } = useQuery<Champion[]>({
@@ -99,19 +100,27 @@ export default function Drafting() {
       if (!draftName.trim()) {
         throw new Error("Le nom du draft est requis");
       }
-      await apiRequest("POST", "/api/drafts", {
-        ...currentDraft,
-        name: draftName,
-      });
+      
+      if (editingDraft) {
+        // Mode édition
+        await apiRequest("PUT", `/api/drafts/${editingDraft.id}`, {
+          ...currentDraft,
+          name: draftName,
+        });
+      } else {
+        // Mode création
+        await apiRequest("POST", "/api/drafts", {
+          ...currentDraft,
+          name: draftName,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/drafts"] });
-      setDraftName("");
-      setCurrentDraft({ teamBans: [], enemyBans: [] });
-      setIsDialogOpen(false);
+      resetForm();
       toast({
-        title: "Draft sauvegardé",
-        description: "Le draft a été enregistré avec succès.",
+        title: editingDraft ? "Draft modifié" : "Draft sauvegardé",
+        description: editingDraft ? "Le draft a été mis à jour." : "Le draft a été enregistré avec succès.",
       });
     },
     onError: (error: Error) => {
@@ -136,6 +145,28 @@ export default function Drafting() {
     },
   });
 
+  const resetForm = () => {
+    setDraftName("");
+    setCurrentDraft({ teamBans: [], enemyBans: [] });
+    setIsDialogOpen(false);
+    setEditingDraft(null);
+  };
+
+  const openEditDialog = (draft: DraftWithDetails) => {
+    setEditingDraft(draft);
+    setDraftName(draft.name);
+    setCurrentDraft({
+      topChampionId: draft.topChampionId,
+      jungleChampionId: draft.jungleChampionId,
+      midChampionId: draft.midChampionId,
+      adcChampionId: draft.adcChampionId,
+      supportChampionId: draft.supportChampionId,
+      teamBans: draft.teamBans || [],
+      enemyBans: draft.enemyBans || [],
+    });
+    setIsDialogOpen(true);
+  };
+
   if (championsLoading || draftsLoading) {
     return (
       <div className="space-y-6 p-8">
@@ -156,7 +187,10 @@ export default function Drafting() {
             Créez et sauvegardez vos compositions d'équipe
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
             <Button data-testid="button-new-draft">
               <Plus className="mr-2 h-4 w-4" />
@@ -166,7 +200,7 @@ export default function Drafting() {
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle className="font-rajdhani text-xl font-bold uppercase">
-                Créer un Draft
+                {editingDraft ? "Modifier le Draft" : "Créer un Draft"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
@@ -259,14 +293,24 @@ export default function Drafting() {
                     {new Date(draft.createdAt).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => deleteDraftMutation.mutate(draft.id)}
-                  data-testid={`button-delete-draft-${draft.id}`}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => openEditDialog(draft)}
+                    data-testid={`button-edit-draft-${draft.id}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => deleteDraftMutation.mutate(draft.id)}
+                    data-testid={`button-delete-draft-${draft.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4">

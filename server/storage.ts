@@ -67,12 +67,14 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getChampions(): Promise<ChampionWithEvaluation[]> {
-    const allChampions = await db.select().from(champions);
+    const allChampions = await db.select().from(champions).orderBy(champions.name);
     const allEvaluations = await db.select().from(championEvaluations);
+    
+    const evaluationsMap = new Map(allEvaluations.map(e => [e.championId, e]));
     
     return allChampions.map((champion) => ({
       ...champion,
-      evaluation: allEvaluations.find((e) => e.championId === champion.id),
+      evaluation: evaluationsMap.get(champion.id),
     }));
   }
 

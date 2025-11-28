@@ -63,6 +63,7 @@ export const scrims = pgTable("scrims", {
   comments: text("comments").notNull().default(''),
   numberOfGames: integer("number_of_games"),
   compositions: jsonb("compositions"),
+  drafts: jsonb("drafts"), // Array d'objets { gameNumber, draftId }
 });
 
 export const players = pgTable("players", {

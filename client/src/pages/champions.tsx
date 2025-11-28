@@ -88,14 +88,26 @@ export default function Champions() {
     mutationFn: async ({ championId, roles }: { championId: string; roles: string[] }) => {
       return await apiRequest("PUT", `/api/champions/${championId}/roles`, { roles });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/champions"] });
+    onMutate: async ({ championId, roles }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/champions"] });
+      const previousChampions = queryClient.getQueryData<ChampionWithEvaluation[]>(["/api/champions"]);
+      
+      queryClient.setQueryData<ChampionWithEvaluation[]>(["/api/champions"], (old) => 
+        old?.map(c => c.id === championId ? { ...c, roles } : c)
+      );
+      
+      return { previousChampions };
+    },
+    onSuccess: () => {
       toast({
         title: "Rôles mis à jour",
         description: "Les rôles du champion ont été enregistrés.",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      if (context?.previousChampions) {
+        queryClient.setQueryData(["/api/champions"], context.previousChampions);
+      }
       console.error("Error updating roles:", error);
       toast({
         variant: "destructive",
@@ -120,14 +132,36 @@ export default function Champions() {
         [characteristic]: value,
       });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/champions"] });
+    onMutate: async ({ championId, characteristic, value }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/champions"] });
+      const previousChampions = queryClient.getQueryData<ChampionWithEvaluation[]>(["/api/champions"]);
+      
+      queryClient.setQueryData<ChampionWithEvaluation[]>(["/api/champions"], (old) => 
+        old?.map(c => {
+          if (c.id === championId) {
+            return {
+              ...c,
+              evaluation: c.evaluation 
+                ? { ...c.evaluation, [characteristic]: value }
+                : { championId, [characteristic]: value } as any
+            };
+          }
+          return c;
+        })
+      );
+      
+      return { previousChampions };
+    },
+    onSuccess: () => {
       toast({
         title: "Évaluation mise à jour",
         description: "L'évaluation du champion a été enregistrée.",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      if (context?.previousChampions) {
+        queryClient.setQueryData(["/api/champions"], context.previousChampions);
+      }
       console.error("Error updating evaluation:", error);
       toast({
         variant: "destructive",

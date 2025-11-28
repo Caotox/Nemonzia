@@ -16,6 +16,14 @@ interface PerformanceData {
   total: number;
 }
 
+interface DraftPerformance {
+  draftId: string;
+  wins: number;
+  losses: number;
+  total: number;
+  winrate: number;
+}
+
 interface Statistics {
   totalScrims: number;
   wins: number;
@@ -23,6 +31,7 @@ interface Statistics {
   winrate: number;
   topChampions: ChampionUsage[];
   performanceOverTime: PerformanceData[];
+  draftPerformance?: DraftPerformance[];
 }
 
 const COLORS = ['#D4AF37', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
@@ -45,6 +54,10 @@ export default function Statistics() {
 
   const { data: champions } = useQuery<Array<{ id: string; name: string }>>({
     queryKey: ["/api/champions"],
+  });
+
+  const { data: drafts } = useQuery<Array<{ id: string; name: string }>>({
+    queryKey: ["/api/drafts"],
   });
 
   if (isLoading) {
@@ -219,6 +232,48 @@ export default function Statistics() {
           </CardContent>
         </Card>
       </div>
+
+      {statistics.draftPerformance && statistics.draftPerformance.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-rajdhani uppercase">Performance des Drafts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {statistics.draftPerformance.map((draftStat) => {
+                const draft = drafts?.find(d => d.id === draftStat.draftId);
+                return (
+                  <div
+                    key={draftStat.draftId}
+                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-medium">{draft?.name || 'Draft inconnu'}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {draftStat.total} game{draftStat.total > 1 ? 's' : ''} jouée{draftStat.total > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-green-500">{draftStat.wins}V</p>
+                        <p className="text-xs text-muted-foreground">Victoires</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-red-500">{draftStat.losses}D</p>
+                        <p className="text-xs text-muted-foreground">Défaites</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-primary">{draftStat.winrate}%</p>
+                        <p className="text-xs text-muted-foreground">Winrate</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -111,8 +111,33 @@ export default function Availability() {
         isAvailable,
       });
     },
+    onMutate: async ({ playerId, dayOfWeek, isAvailable }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/availability"] });
+      const previousAvailability = queryClient.getQueryData<PlayerAvailability[]>(["/api/availability"]);
+      
+      queryClient.setQueryData<PlayerAvailability[]>(["/api/availability"], (old) => {
+        if (!old) return old;
+        const existing = old.find(a => a.playerId === playerId && a.dayOfWeek === dayOfWeek);
+        if (existing) {
+          return old.map(a => 
+            a.playerId === playerId && a.dayOfWeek === dayOfWeek 
+              ? { ...a, isAvailable } 
+              : a
+          );
+        } else {
+          return [...old, { playerId, dayOfWeek, isAvailable, id: `temp-${Date.now()}` }];
+        }
+      });
+      
+      return { previousAvailability };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/availability"] });
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousAvailability) {
+        queryClient.setQueryData(["/api/availability"], context.previousAvailability);
+      }
     },
   });
 

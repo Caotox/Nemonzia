@@ -13,8 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trophy, Target, Calendar, Trash2, X } from "lucide-react";
-import type { Scrim } from "@shared/schema";
+import { Plus, Trophy, Target, Calendar, Trash2, X, Edit } from "lucide-react";
+import type { Scrim, Draft } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -40,6 +40,11 @@ interface GameComposition {
   support?: string;
 }
 
+interface GameDraft {
+  gameNumber: number;
+  draftId?: string;
+}
+
 export default function Scrims() {
   const [opponent, setOpponent] = useState("");
   const [score, setScore] = useState("");
@@ -47,12 +52,18 @@ export default function Scrims() {
   const [comments, setComments] = useState("");
   const [numberOfGames, setNumberOfGames] = useState<number>(1);
   const [compositions, setCompositions] = useState<GameComposition[]>([]);
+  const [gameDrafts, setGameDrafts] = useState<GameDraft[]>([]);
   const [showCompositions, setShowCompositions] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingScrim, setEditingScrim] = useState<Scrim | null>(null);
   const { toast } = useToast();
 
   const { data: scrims, isLoading } = useQuery<Scrim[]>({
     queryKey: ["/api/scrims"],
+  });
+
+  const { data: drafts } = useQuery<Draft[]>({
+    queryKey: ["/api/drafts"],
   });
 
   const addScrimMutation = useMutation({
@@ -60,28 +71,37 @@ export default function Scrims() {
       if (!opponent.trim() || !score.trim()) {
         throw new Error("Adversaire et score sont requis");
       }
-      await apiRequest("POST", "/api/scrims", {
-        opponent,
-        score,
-        isWin,
-        comments,
-        numberOfGames: numberOfGames > 0 ? numberOfGames : undefined,
-        compositions: compositions.length > 0 ? compositions : undefined,
-      });
+      
+      if (editingScrim) {
+        // Mode édition
+        await apiRequest("PUT", `/api/scrims/${editingScrim.id}`, {
+          opponent,
+          score,
+          isWin,
+          comments,
+          numberOfGames: numberOfGames > 0 ? numberOfGames : undefined,
+          compositions: compositions.length > 0 ? compositions : undefined,
+          drafts: gameDrafts.length > 0 ? gameDrafts : undefined,
+        });
+      } else {
+        // Mode création
+        await apiRequest("POST", "/api/scrims", {
+          opponent,
+          score,
+          isWin,
+          comments,
+          numberOfGames: numberOfGames > 0 ? numberOfGames : undefined,
+          compositions: compositions.length > 0 ? compositions : undefined,
+          drafts: gameDrafts.length > 0 ? gameDrafts : undefined,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/scrims"] });
-      setOpponent("");
-      setScore("");
-      setIsWin(true);
-      setComments("");
-      setNumberOfGames(1);
-      setCompositions([]);
-      setShowCompositions(false);
-      setIsDialogOpen(false);
+      resetForm();
       toast({
-        title: "Scrim ajouté",
-        description: "Le résultat du scrim a été enregistré.",
+        title: editingScrim ? "Scrim modifié" : "Scrim ajouté",
+        description: editingScrim ? "Le scrim a été mis à jour." : "Le résultat du scrim a été enregistré.",
       });
     },
     onError: (error: Error) => {
@@ -105,6 +125,32 @@ export default function Scrims() {
       });
     },
   });
+
+  const resetForm = () => {
+    setOpponent("");
+    setScore("");
+    setIsWin(true);
+    setComments("");
+    setNumberOfGames(1);
+    setCompositions([]);
+    setGameDrafts([]);
+    setShowCompositions(false);
+    setIsDialogOpen(false);
+    setEditingScrim(null);
+  };
+
+  const openEditDialog = (scrim: Scrim) => {
+    setEditingScrim(scrim);
+    setOpponent(scrim.opponent);
+    setScore(scrim.score);
+    setIsWin(scrim.isWin);
+    setComments(scrim.comments || "");
+    setNumberOfGames(scrim.numberOfGames || 1);
+    setCompositions(scrim.compositions || []);
+    setGameDrafts(scrim.drafts || []);
+    setShowCompositions((scrim.compositions && scrim.compositions.length > 0) || (scrim.drafts && scrim.drafts.length > 0));
+    setIsDialogOpen(true);
+  };
 
   const wins = scrims?.filter((s) => s.isWin).length || 0;
   const total = scrims?.length || 0;
@@ -130,7 +176,10 @@ export default function Scrims() {
             Suivez les résultats de vos matchs d'entraînement
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-scrim">
               <Plus className="mr-2 h-4 w-4" />
@@ -140,7 +189,7 @@ export default function Scrims() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="font-rajdhani text-xl font-bold uppercase">
-                Nouveau Scrim
+                {editingScrim ? "Modifier le Scrim" : "Nouveau Scrim"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
@@ -209,6 +258,16 @@ export default function Scrims() {
                     } else if (val < compositions.length) {
                       setCompositions(compositions.slice(0, val));
                     }
+                    // Ajuster le tableau des drafts
+                    if (val > gameDrafts.length) {
+                      const newDrafts = [...gameDrafts];
+                      for (let i = gameDrafts.length; i < val; i++) {
+                        newDrafts.push({ gameNumber: i + 1 });
+                      }
+                      setGameDrafts(newDrafts);
+                    } else if (val < gameDrafts.length) {
+                      setGameDrafts(gameDrafts.slice(0, val));
+                    }
                   }}
                   data-testid="input-number-of-games"
                 />
@@ -248,10 +307,46 @@ export default function Scrims() {
                       setCompositions(newComps);
                     };
 
+                    const draftIndex = gameDrafts.findIndex(d => d.gameNumber === gameNum);
+                    const gameDraft = draftIndex >= 0 ? gameDrafts[draftIndex] : { gameNumber: gameNum };
+
+                    const updateDraft = (draftId: string) => {
+                      const newDrafts = [...gameDrafts];
+                      if (draftIndex >= 0) {
+                        newDrafts[draftIndex] = { ...newDrafts[draftIndex], draftId };
+                      } else {
+                        newDrafts.push({ gameNumber: gameNum, draftId });
+                      }
+                      setGameDrafts(newDrafts);
+                    };
+
                     return (
                       <Card key={gameNum} className="p-4">
                         <h4 className="mb-3 font-medium">Game {gameNum}</h4>
                         <div className="grid gap-3">
+                          <div>
+                            <Label className="text-xs">Draft utilisé</Label>
+                            <Select
+                              value={gameDraft.draftId || "none"}
+                              onValueChange={(value) => {
+                                if (value !== "none") {
+                                  updateDraft(value);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Sélectionner un draft" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Aucun</SelectItem>
+                                {drafts?.map((draft) => (
+                                  <SelectItem key={draft.id} value={draft.id}>
+                                    {draft.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs">Top</Label>
@@ -402,31 +497,59 @@ export default function Scrims() {
                   {scrim.comments && (
                     <p className="text-sm text-foreground">{scrim.comments}</p>
                   )}
-                  {scrim.compositions && Array.isArray(scrim.compositions) && scrim.compositions.length > 0 && (
+                  {((scrim.compositions && Array.isArray(scrim.compositions) && scrim.compositions.length > 0) ||
+                    (scrim.drafts && Array.isArray(scrim.drafts) && scrim.drafts.length > 0)) && (
                     <div className="mt-2 space-y-2">
-                      {scrim.compositions.map((comp: GameComposition) => (
-                        <div key={comp.gameNumber} className="rounded border border-border/50 bg-muted/30 p-2">
-                          <p className="mb-1 text-xs font-medium">Game {comp.gameNumber}</p>
-                          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                            {comp.top && <span>Top: {comp.top}</span>}
-                            {comp.jungle && <span>JGL: {comp.jungle}</span>}
-                            {comp.mid && <span>Mid: {comp.mid}</span>}
-                            {comp.adc && <span>ADC: {comp.adc}</span>}
-                            {comp.support && <span>Sup: {comp.support}</span>}
+                      {Array.from({ length: scrim.numberOfGames || 1 }, (_, i) => i + 1).map((gameNum) => {
+                        const comp = scrim.compositions?.find((c: GameComposition) => c.gameNumber === gameNum);
+                        const draftInfo = scrim.drafts?.find((d: GameDraft) => d.gameNumber === gameNum);
+                        const draft = draftInfo ? drafts?.find(d => d.id === draftInfo.draftId) : undefined;
+
+                        if (!comp && !draft) return null;
+
+                        return (
+                          <div key={gameNum} className="rounded border border-border/50 bg-muted/30 p-2">
+                            <div className="mb-1 flex items-center justify-between">
+                              <p className="text-xs font-medium">Game {gameNum}</p>
+                              {draft && (
+                                <Badge variant="outline" className="text-xs">
+                                  Draft: {draft.name}
+                                </Badge>
+                              )}
+                            </div>
+                            {comp && (
+                              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                {comp.top && <span>Top: {comp.top}</span>}
+                                {comp.jungle && <span>JGL: {comp.jungle}</span>}
+                                {comp.mid && <span>Mid: {comp.mid}</span>}
+                                {comp.adc && <span>ADC: {comp.adc}</span>}
+                                {comp.support && <span>Sup: {comp.support}</span>}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => deleteScrimMutation.mutate(scrim.id)}
-                  data-testid={`button-delete-scrim-${scrim.id}`}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => openEditDialog(scrim)}
+                    data-testid={`button-edit-scrim-${scrim.id}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => deleteScrimMutation.mutate(scrim.id)}
+                    data-testid={`button-delete-scrim-${scrim.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

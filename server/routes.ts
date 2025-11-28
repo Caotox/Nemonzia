@@ -230,6 +230,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/scrims/:id", async (req, res) => {
+    try {
+      const scrimData = {
+        ...req.body,
+        id: req.params.id,
+      };
+      const updatedScrim = await storage.updateScrim(req.params.id, scrimData);
+      res.json(updatedScrim);
+    } catch (error) {
+      console.error("Error updating scrim:", error);
+      res.status(500).json({ error: "Failed to update scrim" });
+    }
+  });
+
   app.delete("/api/scrims/:id", async (req, res) => {
     try {
       await storage.deleteScrim(req.params.id);
@@ -249,6 +263,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const wins = scrims.filter(s => s.isWin === true).length;
       const losses = scrims.filter(s => s.isWin === false).length;
       const winrate = totalScrims > 0 ? Math.round((wins / totalScrims) * 100) : 0;
+      
+      // Statistiques des drafts utilisés en scrim
+      const draftUsage: Record<string, { wins: number; losses: number; total: number }> = {};
+      scrims.forEach(scrim => {
+        if (scrim.drafts && Array.isArray(scrim.drafts)) {
+          scrim.drafts.forEach((gameDraft: any) => {
+            if (gameDraft.draftId) {
+              if (!draftUsage[gameDraft.draftId]) {
+                draftUsage[gameDraft.draftId] = { wins: 0, losses: 0, total: 0 };
+              }
+              draftUsage[gameDraft.draftId].total++;
+              if (scrim.isWin) {
+                draftUsage[gameDraft.draftId].wins++;
+              } else {
+                draftUsage[gameDraft.draftId].losses++;
+              }
+            }
+          });
+        }
+      });
+      
+      const draftPerformance = Object.entries(draftUsage)
+        .map(([draftId, stats]) => ({
+          draftId,
+          ...stats,
+          winrate: stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0,
+        }))
+        .sort((a, b) => b.total - a.total);
       
       const championUsage: Record<string, number> = {};
       drafts.forEach(draft => {
@@ -291,6 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         wins,
         losses,
         winrate,
+        draftPerformance,
         topChampions,
         performanceOverTime,
       });
