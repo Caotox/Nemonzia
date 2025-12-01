@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Trophy, Target, Calendar, Trash2, X, Edit } from "lucide-react";
-import type { Scrim, Draft } from "@shared/schema";
+import type { Scrim, Draft, DraftWithDetails, ChampionWithEvaluation } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -63,8 +63,12 @@ export default function Scrims() {
     queryKey: ["/api/scrims"],
   });
 
-  const { data: drafts } = useQuery<Draft[]>({
+  const { data: drafts } = useQuery<DraftWithDetails[]>({
     queryKey: ["/api/drafts"],
+  });
+
+  const { data: champions } = useQuery<ChampionWithEvaluation[]>({
+    queryKey: ["/api/champions"],
   });
 
   const addScrimMutation = useMutation({
@@ -349,6 +353,29 @@ export default function Scrims() {
                         newDrafts.push({ gameNumber: gameNum, draftId });
                       }
                       setGameDrafts(newDrafts);
+                      
+                      // Auto-remplir les champions de l'équipe alliée depuis le draft sélectionné
+                      if (draftId !== "none") {
+                        const selectedDraft = drafts?.find(d => d.id === draftId);
+                        if (selectedDraft) {
+                          const newComps = [...compositions];
+                          const newComp: GameComposition = {
+                            gameNumber: gameNum,
+                            top: selectedDraft.teamTopChampion?.name || "",
+                            jungle: selectedDraft.teamJglChampion?.name || "",
+                            mid: selectedDraft.teamMidChampion?.name || "",
+                            adc: selectedDraft.teamAdcChampion?.name || "",
+                            support: selectedDraft.teamSupChampion?.name || "",
+                          };
+                          
+                          if (compIndex >= 0) {
+                            newComps[compIndex] = newComp;
+                          } else {
+                            newComps.push(newComp);
+                          }
+                          setCompositions(newComps);
+                        }
+                      }
                     };
 
                     return (
@@ -381,50 +408,100 @@ export default function Scrims() {
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs">Top</Label>
-                              <Input
-                                placeholder="Champion"
-                                value={comp.top || ""}
-                                onChange={(e) => updateComposition("top", e.target.value)}
-                                className="h-8"
-                              />
+                              <Select
+                                value={comp.top || "none"}
+                                onValueChange={(value) => updateComposition("top", value === "none" ? "" : value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Champion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Aucun</SelectItem>
+                                  {champions?.map((champion) => (
+                                    <SelectItem key={champion.id} value={champion.name}>
+                                      {champion.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div>
                               <Label className="text-xs">Jungle</Label>
-                              <Input
-                                placeholder="Champion"
-                                value={comp.jungle || ""}
-                                onChange={(e) => updateComposition("jungle", e.target.value)}
-                                className="h-8"
-                              />
+                              <Select
+                                value={comp.jungle || "none"}
+                                onValueChange={(value) => updateComposition("jungle", value === "none" ? "" : value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Champion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Aucun</SelectItem>
+                                  {champions?.map((champion) => (
+                                    <SelectItem key={champion.id} value={champion.name}>
+                                      {champion.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <Label className="text-xs">Mid</Label>
-                              <Input
-                                placeholder="Champion"
-                                value={comp.mid || ""}
-                                onChange={(e) => updateComposition("mid", e.target.value)}
-                                className="h-8"
-                              />
+                              <Select
+                                value={comp.mid || "none"}
+                                onValueChange={(value) => updateComposition("mid", value === "none" ? "" : value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Champion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Aucun</SelectItem>
+                                  {champions?.map((champion) => (
+                                    <SelectItem key={champion.id} value={champion.name}>
+                                      {champion.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div>
                               <Label className="text-xs">ADC</Label>
-                              <Input
-                                placeholder="Champion"
-                                value={comp.adc || ""}
-                                onChange={(e) => updateComposition("adc", e.target.value)}
-                                className="h-8"
-                              />
+                              <Select
+                                value={comp.adc || "none"}
+                                onValueChange={(value) => updateComposition("adc", value === "none" ? "" : value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Champion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Aucun</SelectItem>
+                                  {champions?.map((champion) => (
+                                    <SelectItem key={champion.id} value={champion.name}>
+                                      {champion.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div>
                               <Label className="text-xs">Support</Label>
-                              <Input
-                                placeholder="Champion"
-                                value={comp.support || ""}
-                                onChange={(e) => updateComposition("support", e.target.value)}
-                                className="h-8"
-                              />
+                              <Select
+                                value={comp.support || "none"}
+                                onValueChange={(value) => updateComposition("support", value === "none" ? "" : value)}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Champion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Aucun</SelectItem>
+                                  {champions?.map((champion) => (
+                                    <SelectItem key={champion.id} value={champion.name}>
+                                      {champion.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         </div>
