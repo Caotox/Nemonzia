@@ -189,11 +189,11 @@ async function updateChampionRoles() {
       
       if (result.length > 0) {
         updatedCount++;
-        console.log(`✓ Updated ${championId}: ${roles.join(", ")}`);
+        console.log(`Updated ${championId}: ${roles.join(", ")}`);
       } else {
         notFoundCount++;
         notFoundChampions.push(championId);
-        console.log(`✗ Champion not found: ${championId}`);
+        console.log(`Champion not found: ${championId}`);
       }
     } catch (error) {
       console.error(`Error updating ${championId}:`, error);

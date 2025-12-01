@@ -14,12 +14,12 @@ async function fixZaahenImage() {
       })
       .where(eq(champions.id, "Zaahen"));
     
-    console.log("✅ Zaahen image updated successfully!");
+    console.log("Zaahen image updated successfully!");
     console.log("   - Image URL: /zaahen.png");
     console.log("   - Location: client/public/zaahen.png");
     
   } catch (error) {
-    console.error("❌ Error updating Zaahen image:", error);
+    console.error("Error updating Zaahen image:", error);
     throw error;
   }
   

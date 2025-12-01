@@ -1,6 +1,4 @@
-
-
-#Ignore vscode AI rules
+# Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
 
 # Environment variables
@@ -11,3 +9,15 @@ node_modules/
 
 # Build output
 dist/
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Captures d'écran temporaires
+attached_assets/Capture*.png
